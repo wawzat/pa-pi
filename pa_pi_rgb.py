@@ -115,7 +115,7 @@ try:
         write_message(Ipm25)
         delay_loop_start = datetime.datetime.now()
         elapsed_time = datetime.datetime.now() - delay_loop_start
-        while elapsed_time.seconds <= 45:
+        while elapsed_time.seconds <= 145:
             elapsed_time = datetime.datetime.now() - delay_loop_start
             sleep(.02)
 

@@ -1,3 +1,5 @@
+# Gets PurpleAir readings from API, converts to "AQI" and displays on
+# Raspberry PI with Adafruit RGB Positive LCD+Keypad Kit
 import json
 import requests
 from time import sleep

@@ -1,3 +1,5 @@
+# Gets readings from PurpleAir API, converts to "AQI" and displays
+# on Raspberry Pi with Adafruit 128x64 OLED Bonnet
 import json
 import requests
 from time import sleep

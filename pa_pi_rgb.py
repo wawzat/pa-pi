@@ -19,16 +19,29 @@ lcd.color = [0, 150, 0]
 lcd.message = "Ready"
 
 
-def write_message(message, backlightColor):
-   lcd.clear()
-   if backlightColor == 'Green':
-      lcd.color = [0, 150, 0]
-   elif backlightColor == 'Yellow':
-      lcd.color = [150, 150, 0]
-   elif backlightColor == "Red":
-      lcd.color = [150, 0, 0]
-   lcd.message = message
-   return
+def write_message(Ipm25):
+    lcd.clear()
+    if Ipm25 <= 50:
+        health_cat = "Good"
+        lcd.color = [0, 100, 0]
+    elif 50 < Ipm25 <= 100:
+        health_cat = "Moderate"
+        lcd.color = [100, 100, 0]
+    elif 100< Ipm25 <= 150:
+        health_cat = "Sensitive"   
+        lcd.color = [100, 100, 100]
+    elif 150 < Ipm25 <= 200:
+        health_cat = "Unhealthy"
+        lcd.color = [100, 0, 0]
+    elif 200 < Ipm25 <= 300:
+        health_cat = "Very Unhealthy"
+        lcd.color = [100, 0, 100]
+    elif Ipm25 > 300:
+        health_cat = "Hazardous"
+        lcd.color = [0, 0, 100]
+    message = "AQI: " + str(Ipm25) + "\n" + health_cat
+    lcd.message = message
+    return
 
 
 def get_sensor_reading(sensor_id):
@@ -85,30 +98,27 @@ def calc_aqi(PM2_5):
         Ipm25 = int(round(
             ((Ihigh - Ilow) / (Chigh - Clow) * (PM2_5 - Clow) + Ilow)
             ))
-        if Ipm25 <= 50:
-            color = "Green"
-        elif 50 < Ipm25 <= 100:
-            color = "Yellow"
-        elif Ipm25 > 100:
-            color = "Red"   
-        return Ipm25, color
+
+        return Ipm25
     except Exception as e:
         pass
         print("error in calc_aqi() function: %s") % e
     traceback.print_exc(file=sys.stdout)
 
 
-#sensor_id = "9208"
-sensor_id = "27815"
+sensor_id = "9208"
+#sensor_id = "27815"
 
 try:
     while 1:
         reading = get_sensor_reading(sensor_id)
-        print(reading)
-        Ipm25, color = calc_aqi(reading)
-        message = "AQI: " + str(Ipm25)
-        print(message)
-        write_message(message, color)
+        Ipm25 = calc_aqi(reading)
+        #levels = [25, 60, 120, 170, 250, 350]
+        #for level in levels:
+            #Ipm25 = level
+            #write_message(Ipm25)
+            #sleep(3)
+        write_message(Ipm25)
         delay_loop_start = datetime.datetime.now()
         elapsed_time = datetime.datetime.now() - delay_loop_start
         while elapsed_time.seconds <= 45:
@@ -116,5 +126,7 @@ try:
             sleep(.02)
 
 except KeyboardInterrupt:
-   sleep(.4)
-   GPIO.cleanup()
+    sleep(.4)
+    lcd.color = [0, 0, 0]
+    lcd.clear()
+    GPIO.cleanup()

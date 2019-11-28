@@ -57,7 +57,6 @@ def calc_aqi(PM2_5):
     # 24 hour midnight-midnight average. May change to NowCast or other
     # methodology in the future.
 
-    color = "Red"
     # Truncate to one decimal place.
     PM2_5 = int(float(PM2_5) * 10) / 10.0
     if PM2_5 < 0:
@@ -103,7 +102,7 @@ def calc_aqi(PM2_5):
     except Exception as e:
         pass
         print("error in calc_aqi() function: %s") % e
-    traceback.print_exc(file=sys.stdout)
+        traceback.print_exc(file=sys.stdout)
 
 
 sensor_id = "9208"
@@ -113,11 +112,6 @@ try:
     while 1:
         reading = get_sensor_reading(sensor_id)
         Ipm25 = calc_aqi(reading)
-        #levels = [25, 60, 120, 170, 250, 350]
-        #for level in levels:
-            #Ipm25 = level
-            #write_message(Ipm25)
-            #sleep(3)
         write_message(Ipm25)
         delay_loop_start = datetime.datetime.now()
         elapsed_time = datetime.datetime.now() - delay_loop_start

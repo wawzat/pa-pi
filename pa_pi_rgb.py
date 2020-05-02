@@ -1,11 +1,10 @@
 # Gets PurpleAir readings from API, converts to "AQI" and displays on
 # Raspberry PI with Adafruit RGB Positive LCD+Keypad Kit
-# James S. Lucas - 20200411
+# James S. Lucas - 20200502
 import json
 import requests
 from time import sleep
 import datetime
-#import RPi.GPIO as GPIO
 import sys
 import traceback
  
@@ -20,9 +19,17 @@ lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
 lcd.clear()
 lcd.color = [0, 150, 0]
 lcd.message = "Ready"
+
+# Create custom backslash character
 backslash = bytes([0x0,0x10,0x8,0x4,0x2,0x1,0x0,0x0])
 lcd.create_char(0, backslash)
+
 slash = "forward"
+
+connection_url = "https://www.purpleair.com/json?show="
+sensor_id = "9208"
+#sensor_id = "27815"
+
 
 def write_message(Ipm25, conn_success, display, active, slash):
     if conn_success:
@@ -38,7 +45,7 @@ def write_message(Ipm25, conn_success, display, active, slash):
         elif 150 < Ipm25.get('current') <= 200:
             health_cat = "Unhealthy"
             color = [100, 0, 0]
-        elif 200 < Ipm25i.get('current') <= 300:
+        elif 200 < Ipm25.get('current') <= 300:
             health_cat = "Very Unhealthy"
             color = [100, 0, 100]
         elif Ipm25.get('current') > 300:
@@ -74,9 +81,12 @@ def write_message(Ipm25, conn_success, display, active, slash):
                 + online_status
                 )
     else:
+        lcd.clear()
         color = [100, 0, 0]
         message = "Connection Error"
     lcd.message = message
+    if message == "Connection Error":
+        sleep(2)
     if display == "on":
         lcd.color = color
     elif display == "off":
@@ -85,28 +95,9 @@ def write_message(Ipm25, conn_success, display, active, slash):
     return slash
 
 
-def write_spinner(Ipm25, conn_success, display, active, slash):
+def write_spinner(conn_success, display, active, slash):
+    # Updates a spinning slash on the bottom right of the display.
     if conn_success:
-        if Ipm25.get('current') <= 50:
-            health_cat = "Good"
-            color = [0, 100, 0]
-        elif 50 < Ipm25.get('current') <= 100:
-            health_cat = "Moderate"
-            color = [100, 100, 0]
-        elif 100< Ipm25.get('current') <= 150:
-            health_cat = "Sensitive"   
-            color = [100, 100, 100]
-        elif 150 < Ipm25.get('current') <= 200:
-            health_cat = "Unhealthy"
-            color = [100, 0, 0]
-        elif 200 < Ipm25i.get('current') <= 300:
-            health_cat = "Very Unhealthy"
-            color = [100, 0, 100]
-        elif Ipm25.get('current') > 300:
-            health_cat = "Hazardous"
-            color = [0, 0, 100]
-        # Calculate the number of spaces to pad between current and previous AQI
-        l1_pad_length = 16 - (len(str(Ipm25.get('current'))) + len(str(Ipm25.get('previous'))) + 8)
         if active == True:
                 if slash == "forward":
                     slash = "up"
@@ -125,38 +116,30 @@ def write_spinner(Ipm25, conn_success, display, active, slash):
         message = (online_status)
         lcd.cursor_position(16,1)
     else:
+        lcd.clear()
         color = [100, 0, 0]
         message = "Connection Error"
-    #if display == "on":
-        #lcd.color = color
-        #l2_pad_length = 16 - (len(health_cat) + len(online_status))
-        #message = (
-                #"AQI: "
-                #+ str(Ipm25.get('current'))
-                #+ ' ' * l1_pad_length
-                #+ "P: "
-                #+ str(Ipm25.get('previous'))
-                #+ "\n" 
-                #+ health_cat
-                #+ ' ' * l2_pad_length
-                #+ online_status
-                #)
-    #elif display == "off":
-        #lcd.clear()
-        #lcd.color = [0, 0, 0]
     lcd.message = message
+    if message == "Connection Error":
+        sleep(2)
     return slash   
 
 
 def get_sensor_reading(sensor_id, connection_url):
     try:
         response = requests.get(connection_url + sensor_id)
-        sensor_reading = json.loads(response.text)
+        if response.status_code == 200:
+            print(response.text)
+            sensor_reading = json.loads(response.text)
+        else:
+            print("error status code not 200")
+            raise requests.exceptions.RequestException
         pm2_5_reading = sensor_reading['results'][0]['PM2_5Value']
         conn_success = True
         return pm2_5_reading, conn_success
     except requests.exceptions.RequestException as e:
         conn_success = False
+        print("Request Exception: %s" % e)
         return 0, conn_success
 
 
@@ -209,13 +192,9 @@ def calc_aqi(PM2_5):
         return Ipm25
     except Exception as e:
         pass
-        print("error in calc_aqi() function: %s") % e
+        print("error in calc_aqi() function: %s" % e)
         traceback.print_exc(file=sys.stdout)
 
-
-connection_url = "https://www.purpleair.com/json?show="
-sensor_id = "9208"
-#sensor_id = "27815"
 
 try:
     display = "on"
@@ -238,33 +217,24 @@ try:
         elapsed_time = datetime.datetime.now() - delay_loop_start
         while elapsed_time.seconds <= 135:
             elapsed_time = datetime.datetime.now() - delay_loop_start
-            #if elapsed_time.seconds % 2 == 0:
-                #print(str(elapsed_time.seconds))
-            slash = write_spinner(Ipm25, conn_success, display, active, slash)
+            slash = write_spinner(conn_success, display, active, slash)
             if lcd.select_button:
                 if display == "on":
                     display = "off"
                 elif display == "off":
                     display = "on"
-                    #reading, conn_success = get_sensor_reading(sensor_id, connection_url)
-                    #if conn_success:
-                        #Ipm25['previous'] = Ipm25.get('current')
-                        #Ipm25['current'] = calc_aqi(reading)
                 slash = write_message(Ipm25, conn_success, display, active, slash)
             elif lcd.right_button:
                 if active == True:
                     active = False
                 elif active == False:
                     active = True
-                    #reading, conn_success = get_sensor_reading(sensor_id, connection_url)
-                    #if conn_success:
-                        #Ipm25['previous'] = Ipm25.get('current')
-                        #Ipm25['current'] = calc_aqi(reading)
-                slash = write_spinner(Ipm25, conn_success, display, active, slash)
+                slash = write_spinner(conn_success, display, active, slash)
             sleep(.01)
 
 except KeyboardInterrupt:
     sleep(.4)
     lcd.color = [0, 0, 0]
+    lcd.message = " "
     lcd.clear()
-    #GPIO.cleanup()
+    sleep(.4)

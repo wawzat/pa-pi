@@ -103,8 +103,7 @@ def write_spinner(conn_success, display, active, slash):
         if active == True:
             message = next(spinner)
         else:
-            online_status = " "
-        message = (online_status)
+            message = (" ")
         lcd.cursor_position(16,1)
     else:
         lcd.clear()

@@ -25,7 +25,6 @@ lcd.message = "Ready"
 backslash = bytes([0x0,0x10,0x8,0x4,0x2,0x1,0x0,0x0])
 lcd.create_char(0, backslash)
 
-slash = "forward"
 spinner = itertools.cycle(['-', '/', '|', '\x00'])
 
 connection_url = "https://www.purpleair.com/json?show="
@@ -33,7 +32,7 @@ sensor_id = "9208"
 #sensor_id = "27815"
 
 
-def write_message(Ipm25, conn_success, display, active, slash):
+def write_message(Ipm25, conn_success, display, active):
     if conn_success:
         if Ipm25.get('current') <= 50:
             health_cat = "Good"
@@ -56,18 +55,7 @@ def write_message(Ipm25, conn_success, display, active, slash):
         # Calculate the number of spaces to pad between current and previous AQI
         l1_pad_length = 16 - (len(str(Ipm25.get('current'))) + len(str(Ipm25.get('previous'))) + 8)
         if active == True:
-                if slash == "forward":
-                    slash = "up"
-                    online_status = "|"
-                elif slash == "up":
-                    slash = "backward"
-                    online_status = "\x00"
-                elif slash == "backward":
-                    slash = "sideways"
-                    online_status = "-" 
-                elif slash == "sideways":
-                    slash = "forward"
-                    online_status = "/"
+            online_status = next(spinner)
         else:
             online_status = ""
         l2_pad_length = 16 - (len(health_cat) + len(online_status))
@@ -94,10 +82,9 @@ def write_message(Ipm25, conn_success, display, active, slash):
     elif display == "off":
         lcd.clear()
         lcd.color = [0, 0, 0]
-    return slash
 
 
-def write_spinner(conn_success, display, active, slash):
+def write_spinner(conn_success, display, active):
     # Updates a spinning slash on the bottom right of the display.
     if conn_success:
         if active == True:
@@ -112,7 +99,6 @@ def write_spinner(conn_success, display, active, slash):
     lcd.message = message
     if message == "Connection Error":
         sleep(2)
-    return slash   
 
 
 def get_sensor_reading(sensor_id, connection_url):
@@ -202,24 +188,24 @@ try:
                 Ipm25['current'] = calc_aqi(reading)
         elif 22 < datetime.datetime.now().hour < 5:
             active = False
-        slash = write_message(Ipm25, conn_success,  display, active, slash)
+        write_message(Ipm25, conn_success,  display, active)
         delay_loop_start = datetime.datetime.now()
         elapsed_time = datetime.datetime.now() - delay_loop_start
         while elapsed_time.seconds <= 135:
             elapsed_time = datetime.datetime.now() - delay_loop_start
-            slash = write_spinner(conn_success, display, active, slash)
+            write_spinner(conn_success, display, active)
             if lcd.select_button:
                 if display == "on":
                     display = "off"
                 elif display == "off":
                     display = "on"
-                slash = write_message(Ipm25, conn_success, display, active, slash)
+                write_message(Ipm25, conn_success, display, active)
             elif lcd.right_button:
                 if active == True:
                     active = False
                 elif active == False:
                     active = True
-                slash = write_spinner(conn_success, display, active, slash)
+                write_spinner(conn_success, display, active)
             sleep(.01)
 
 except KeyboardInterrupt:

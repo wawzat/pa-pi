@@ -101,18 +101,7 @@ def write_spinner(conn_success, display, active, slash):
     # Updates a spinning slash on the bottom right of the display.
     if conn_success:
         if active == True:
-                if slash == "forward":
-                    slash = "up"
-                    online_status = "|"
-                elif slash == "up":
-                    slash = "backward"
-                    online_status = "\x00"
-                elif slash == "backward":
-                    slash = "sideways"
-                    online_status = "-" 
-                elif slash == "sideways":
-                    slash = "forward"
-                    online_status = "/"
+            message = next(spinner)
         else:
             online_status = " "
         message = (online_status)
@@ -219,25 +208,19 @@ try:
         elapsed_time = datetime.datetime.now() - delay_loop_start
         while elapsed_time.seconds <= 135:
             elapsed_time = datetime.datetime.now() - delay_loop_start
-            #slash = write_spinner(conn_success, display, active, slash)
-            lcd.cursor_position(16, 1) 
-            lcd.message = next(spinner)
+            slash = write_spinner(conn_success, display, active, slash)
             if lcd.select_button:
                 if display == "on":
                     display = "off"
                 elif display == "off":
                     display = "on"
-                #slash = write_message(Ipm25, conn_success, display, active, slash)
-                lcd.cursor_position(16, 1) 
-                lcd.message = next(spinner)
+                slash = write_message(Ipm25, conn_success, display, active, slash)
             elif lcd.right_button:
                 if active == True:
                     active = False
                 elif active == False:
                     active = True
-                #slash = write_spinner(conn_success, display, active, slash)
-                lcd.cursor_position(16, 1) 
-                lcd.message = next(spinner)
+                slash = write_spinner(conn_success, display, active, slash)
             sleep(.01)
 
 except KeyboardInterrupt:

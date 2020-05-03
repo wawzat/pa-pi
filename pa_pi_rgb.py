@@ -117,7 +117,7 @@ def write_spinner(conn_success, display, active, slash):
         lcd.cursor_position(16,1)
     else:
         lcd.clear()
-        color = [100, 0, 0]
+        lcd.color = [100, 0, 0]
         message = "Connection Error"
     lcd.message = message
     if message == "Connection Error":

@@ -7,6 +7,7 @@ from time import sleep
 import datetime
 import sys
 import traceback
+import itertools
  
 import board
 import busio
@@ -25,6 +26,7 @@ backslash = bytes([0x0,0x10,0x8,0x4,0x2,0x1,0x0,0x0])
 lcd.create_char(0, backslash)
 
 slash = "forward"
+spinner = itertools.cycle(['-', '/', '|', '\x00'])
 
 connection_url = "https://www.purpleair.com/json?show="
 sensor_id = "9208"
@@ -217,19 +219,25 @@ try:
         elapsed_time = datetime.datetime.now() - delay_loop_start
         while elapsed_time.seconds <= 135:
             elapsed_time = datetime.datetime.now() - delay_loop_start
-            slash = write_spinner(conn_success, display, active, slash)
+            #slash = write_spinner(conn_success, display, active, slash)
+            lcd.cursor_position(16, 1) 
+            lcd.message = next(spinner)
             if lcd.select_button:
                 if display == "on":
                     display = "off"
                 elif display == "off":
                     display = "on"
-                slash = write_message(Ipm25, conn_success, display, active, slash)
+                #slash = write_message(Ipm25, conn_success, display, active, slash)
+                lcd.cursor_position(16, 1) 
+                lcd.message = next(spinner)
             elif lcd.right_button:
                 if active == True:
                     active = False
                 elif active == False:
                     active = True
-                slash = write_spinner(conn_success, display, active, slash)
+                #slash = write_spinner(conn_success, display, active, slash)
+                lcd.cursor_position(16, 1) 
+                lcd.message = next(spinner)
             sleep(.01)
 
 except KeyboardInterrupt:

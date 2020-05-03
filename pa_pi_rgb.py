@@ -197,6 +197,7 @@ def calc_aqi(PM2_5):
 
 
 try:
+    print("test works")
     display = "on"
     active = True
     Ipm25 = {'current' : 0, 'previous': 0}

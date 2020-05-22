@@ -33,6 +33,11 @@ sensor_id = "9208"
 
 
 def write_message(Ipm25, conn_success, display, active):
+    if display == "on":
+        lcd.color = color
+    elif display == "off":
+        lcd.clear()
+        lcd.color = [0, 0, 0]
     if conn_success:
         if Ipm25.get('current') <= 50:
             health_cat = "Good"
@@ -77,11 +82,6 @@ def write_message(Ipm25, conn_success, display, active):
     lcd.message = message
     if message == "Connection Error":
         sleep(2)
-    if display == "on":
-        lcd.color = color
-    elif display == "off":
-        lcd.clear()
-        lcd.color = [0, 0, 0]
 
 
 def write_spinner(conn_success, display, active):

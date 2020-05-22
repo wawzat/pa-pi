@@ -33,11 +33,6 @@ sensor_id = "9208"
 
 
 def write_message(Ipm25, conn_success, display, active):
-    if display == "on":
-        lcd.color = color
-    elif display == "off":
-        lcd.clear()
-        lcd.color = [0, 0, 0]
     if conn_success:
         if Ipm25.get('current') <= 50:
             health_cat = "Good"
@@ -57,6 +52,11 @@ def write_message(Ipm25, conn_success, display, active):
         elif Ipm25.get('current') > 300:
             health_cat = "Hazardous"
             color = [0, 0, 100]
+        if display == "on":
+            lcd.color = color
+        elif display == "off":
+            lcd.clear()
+            lcd.color = [0, 0, 0]
         # Calculate the number of spaces to pad between current and previous AQI
         l1_pad_length = 16 - (len(str(Ipm25.get('current'))) + len(str(Ipm25.get('previous'))) + 8)
         if active == True:

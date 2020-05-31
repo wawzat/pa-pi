@@ -197,8 +197,10 @@ try:
             if lcd.select_button:
                 if display == "on":
                     display = "off"
+                    active = False
                 elif display == "off":
                     display = "on"
+                    active = True
                 write_message(Ipm25, conn_success, display, active)
             elif lcd.right_button:
                 if active == True:

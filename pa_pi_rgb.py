@@ -79,7 +79,8 @@ def write_message(Ipm25, conn_success, display, active):
         lcd.clear()
         color = [100, 0, 0]
         message = "Connection Error"
-    lcd.message = message
+    if display == "on":
+        lcd.message = message
     if message == "Connection Error":
         sleep(2)
 

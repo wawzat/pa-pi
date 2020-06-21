@@ -8,6 +8,7 @@ import datetime
 import sys
 import traceback
 import itertools
+import config.py
  
 import board
 import busio
@@ -27,7 +28,8 @@ lcd.create_char(0, backslash)
 
 spinner = itertools.cycle(['-', '/', '|', '\x00'])
 
-connection_url = "https://www.purpleair.com/json?show="
+#connection_url_json = "https://www.purpleair.com/json?show="
+connection_url_rest = "https://api.purpleair.com/v1/sensors/"
 sensor_id = "9208"
 #sensor_id = "27815"
 
@@ -102,8 +104,9 @@ def write_spinner(conn_success, display, active):
         sleep(2)
 
 
-def get_sensor_reading(sensor_id, connection_url):
+def get_sensor_reading_url(sensor_id, connection_url):
     try:
+        connection_string = connection_url + sensor_id + " HTTP/1.1 X-API-Key: " + config.X-API-Key
         response = requests.get(connection_url + sensor_id)
         if response.status_code == 200:
             print(response.text)
@@ -111,7 +114,8 @@ def get_sensor_reading(sensor_id, connection_url):
         else:
             print("error status code not 200")
             raise requests.exceptions.RequestException
-        pm2_5_reading = sensor_reading['results'][0]['PM2_5Value']
+        #pm2_5_reading = sensor_reading['results'][0]['PM2_5Value']
+        pm2_5_reading = sensor['pm2.5_a']
         conn_success = True
         return pm2_5_reading, conn_success
     except requests.exceptions.RequestException as e:

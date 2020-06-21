@@ -8,7 +8,7 @@ import datetime
 import sys
 import traceback
 import itertools
-import config.py
+import config
  
 import board
 import busio

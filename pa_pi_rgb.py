@@ -106,7 +106,7 @@ def write_spinner(conn_success, display, active):
 
 def get_sensor_reading(sensor_id, connection_url):
     try:
-        connection_string = connection_url + sensor_id + " HTTP/1.1 X-API-Key: " + config.X-API-Key
+        connection_string = connection_url + sensor_id + " HTTP/1.1 X-API-Key: " + config.X_API_Key
         response = requests.get(connection_string)
         if response.status_code == 200:
             print(response.text)
@@ -181,7 +181,7 @@ try:
     display = "on"
     active = True
     Ipm25 = {'current' : 0, 'previous': 0}
-    reading, conn_success = get_sensor_reading(sensor_id, connection_url)
+    reading, conn_success = get_sensor_reading(sensor_id, connection_url_rest)
     if conn_success:
         Ipm25['previous'] = calc_aqi(reading)
     sleep(1)

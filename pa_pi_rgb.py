@@ -104,10 +104,10 @@ def write_spinner(conn_success, display, active):
         sleep(2)
 
 
-def get_sensor_reading_url(sensor_id, connection_url):
+def get_sensor_reading(sensor_id, connection_url):
     try:
         connection_string = connection_url + sensor_id + " HTTP/1.1 X-API-Key: " + config.X-API-Key
-        response = requests.get(connection_url + sensor_id)
+        response = requests.get(connection_string)
         if response.status_code == 200:
             print(response.text)
             sensor_reading = json.loads(response.text)
@@ -187,7 +187,7 @@ try:
     sleep(1)
     while 1:
         if (5 < datetime.datetime.now().hour <= 22) and (active == True):
-            reading, conn_success = get_sensor_reading(sensor_id, connection_url)
+            reading, conn_success = get_sensor_reading(sensor_id, connection_url_rest)
             if conn_success:
                 Ipm25['previous'] = Ipm25.get('current')
                 Ipm25['current'] = calc_aqi(reading)

@@ -106,9 +106,9 @@ def write_spinner(conn_success, display, active):
 
 def get_sensor_reading(sensor_id, connection_url):
     try:
-        connection_string = connection_url + sensor_id + " HTTP/1.1 X-API-Key: " + config.X_API_Key
-        print(connection_string)
-        response = requests.get(connection_string)
+        connection_string = connection_url + sensor_id 
+        header = {"HTTP/1.1 X-API-Key:":config.X_API_Key}
+        response = requests.get(connection_string, headers=header)
         if response.status_code == 200:
             print(response.text)
             sensor_reading = json.loads(response.text)

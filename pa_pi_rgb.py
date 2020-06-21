@@ -116,7 +116,7 @@ def get_sensor_reading(sensor_id, connection_url):
             print("error status code not 200")
             raise requests.exceptions.RequestException
         #pm2_5_reading = sensor_reading['results'][0]['PM2_5Value']
-        pm2_5_reading = sensor['pm2.5_a']
+        pm2_5_reading = sensor_reading['pm2.5_a']
         conn_success = True
         return pm2_5_reading, conn_success
     except requests.exceptions.RequestException as e:

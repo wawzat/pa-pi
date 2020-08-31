@@ -30,7 +30,7 @@ spinner = itertools.cycle(['-', '/', '|', '\x00'])
 
 #connection_url_json = "https://www.purpleair.com/json?show="
 #connection_url_rest = "https://api.purpleair.com/v1/sensors/"
-connection_url_rest = "192.168.1.225/json"
+connection_url_rest = "http://192.168.1.225/json"
 sensor_id = "9208"
 #sensor_id = "27815"
 

@@ -29,7 +29,8 @@ lcd.create_char(0, backslash)
 spinner = itertools.cycle(['-', '/', '|', '\x00'])
 
 #connection_url_json = "https://www.purpleair.com/json?show="
-connection_url_rest = "https://api.purpleair.com/v1/sensors/"
+#connection_url_rest = "https://api.purpleair.com/v1/sensors/"
+connection_url_rest = "192.168.1.225/json"
 sensor_id = "9208"
 #sensor_id = "27815"
 
@@ -106,9 +107,11 @@ def write_spinner(conn_success, display, active):
 
 def get_sensor_reading(sensor_id, connection_url):
     try:
-        connection_string = connection_url + sensor_id 
-        header = {"X-API-Key":config.X_API_Key}
-        response = requests.get(connection_string, headers=header)
+        #connection_string = connection_url + sensor_id 
+        connection_string = connection_url
+        #header = {"X-API-Key":config.X_API_Key}
+        #response = requests.get(connection_string, headers=header)
+        response = requests.get(connection_string)
         if response.status_code == 200:
             print(response.text)
             sensor_reading = json.loads(response.text)

@@ -107,7 +107,7 @@ def calc_aqi(PM2_5):
     pm25_aqi = {
         'good': [0, 50, 0, 12],
         'moderate': [51, 100, 12.1, 35.4],
-        'sensitive': [101, 150, 33.5, 55.4],
+        'sensitive': [101, 150, 35.5, 55.4],
         'unhealthy': [151, 200, 55.5, 150.4],
         'very': [201, 300, 150.5, 250.4],
         'hazardous': [301, 500, 250.5, 500.4],
@@ -118,7 +118,7 @@ def calc_aqi(PM2_5):
             aqi_cat = 'good'
         elif (12.1 <= PM2_5 <= 35.4):
             aqi_cat = 'moderate'
-        elif (33.5 <= PM2_5 <= 55.4):
+        elif (35.5 <= PM2_5 <= 55.4):
             aqi_cat = 'sensitive'
         elif (55.5 <= PM2_5 <= 150.4):
             aqi_cat = 'unhealthy'

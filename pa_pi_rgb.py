@@ -1,6 +1,6 @@
-# Gets PurpleAir readings from API, converts to "AQI" and displays on
+# Gets PurpleAir readings from API or locally, converts to "AQI" and displays on
 # Raspberry PI with Adafruit RGB Positive LCD+Keypad Kit
-# James S. Lucas - 20200502
+# James S. Lucas - 20200912
 import json
 import requests
 from time import sleep
@@ -28,9 +28,15 @@ lcd.create_char(0, backslash)
 
 spinner = itertools.cycle(['-', '/', '|', '\x00'])
 
-#connection_url_json = "https://www.purpleair.com/json?show="
-#connection_url_rest = "https://api.purpleair.com/v1/sensors/"
-connection_url_rest = "http://192.168.1.225/json"
+# set data_mode to local or api to either get data directly from a PA sensor on the local network or from PurpleAir API
+data_mode = 'local'
+#data_mode = 'api'
+
+if data_mode == 'api':
+    connection_url = "https://api.purpleair.com/v1/sensors/"
+elif data_mode == 'local':
+    connection_url = "http://192.168.1.225/json"
+
 sensor_id = "9208"
 #sensor_id = "27815"
 
@@ -105,24 +111,33 @@ def write_spinner(conn_success, display, active):
         sleep(2)
 
 
-def get_sensor_reading(sensor_id, connection_url):
+def get_sensor_reading(sensor_id, connection_url, data_mode):
     try:
-        #connection_string = connection_url + sensor_id 
-        connection_string = connection_url
-        #header = {"X-API-Key":config.X_API_Key}
-        #response = requests.get(connection_string, headers=header)
-        response = requests.get(connection_string)
-        if response.status_code == 200:
-            print(response.text)
-            sensor_reading = json.loads(response.text)
-        else:
-            print("error status code not 200")
-            raise requests.exceptions.RequestException
-        #pm2_5_reading = sensor_reading['results'][0]['PM2_5Value']
-        #pm2_5_reading = sensor_reading['sensor']['pm2.5_a']
-        pm2_5_reading = sensor_reading['pm2_5_atm']
-        conn_success = True
-        return pm2_5_reading, conn_success
+        if data_mode == 'local':
+            connection_string = connection_url
+            response = requests.get(connection_string)
+            if response.status_code == 200:
+                print(response.text)
+                sensor_reading = json.loads(response.text)
+            else:
+                print("error status code not 200")
+                raise requests.exceptions.RequestException
+            pm2_5_reading = sensor_reading['pm2_5_atm']
+            conn_success = True
+            return pm2_5_reading, conn_success
+        elif data_mode == 'api':
+            connection_string = connection_url + sensor_id 
+            header = {"X-API-Key":config.X_API_Key}
+            response = requests.get(connection_string, headers=header)
+            if response.status_code == 200:
+                print(response.text)
+                sensor_reading = json.loads(response.text)
+            else:
+                print("error status code not 200")
+                raise requests.exceptions.RequestException
+            pm2_5_reading = sensor_reading['sensor']['pm2.5_a']
+            conn_success = True
+            return pm2_5_reading, conn_success
     except requests.exceptions.RequestException as e:
         conn_success = False
         print("Request Exception: %s" % e)
@@ -186,13 +201,13 @@ try:
     display = "on"
     active = True
     Ipm25 = {'current' : 0, 'previous': 0}
-    reading, conn_success = get_sensor_reading(sensor_id, connection_url_rest)
+    reading, conn_success = get_sensor_reading(sensor_id, connection_url, data_mode)
     if conn_success:
         Ipm25['previous'] = calc_aqi(reading)
     sleep(1)
     while 1:
         if (5 < datetime.datetime.now().hour <= 22) and (active == True):
-            reading, conn_success = get_sensor_reading(sensor_id, connection_url_rest)
+            reading, conn_success = get_sensor_reading(sensor_id, connection_url, data_mode)
             if conn_success:
                 Ipm25['previous'] = Ipm25.get('current')
                 Ipm25['current'] = calc_aqi(reading)

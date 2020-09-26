@@ -28,37 +28,30 @@ lcd.create_char(0, backslash)
 
 spinner = itertools.cycle(['-', '/', '|', '\x00'])
 
-# set data_mode to local or api to either get data directly from a PA sensor on the local network or from PurpleAir API
-data_mode = 'local'
-#data_mode = 'api'
-
-if data_mode == 'api':
-    connection_url = "https://api.purpleair.com/v1/sensors/"
-elif data_mode == 'local':
-    connection_url = "http://192.168.1.225/json"
+connection_url = "http://192.168.1.225/json"
 
 sensor_id = "9208"
 #sensor_id = "27815"
 
 
-def write_message(Ipm25, Ipm25_live, conn_success, display, active):
+def write_message(Ipm25_avg, Ipm25_live, conn_success, display, active):
     if conn_success:
-        if Ipm25.get('current') <= 50:
+        if Ipm25_avg <= 50:
             health_cat = "Good"
             color = [0, 100, 0]
-        elif 50 < Ipm25.get('current') <= 100:
+        elif 50 < Ipm25_avg <= 100:
             health_cat = "Moderate"
             color = [100, 100, 0]
-        elif 100< Ipm25.get('current') <= 150:
+        elif 100< Ipm25_avg <= 150:
             health_cat = "Sensitive"   
             color = [100, 100, 100]
-        elif 150 < Ipm25.get('current') <= 200:
+        elif 150 < Ipm25_avg <= 200:
             health_cat = "Unhealthy"
             color = [100, 0, 0]
-        elif 200 < Ipm25.get('current') <= 300:
+        elif 200 < Ipm25_avg <= 300:
             health_cat = "Very Unhealthy"
             color = [100, 0, 100]
-        elif Ipm25.get('current') > 300:
+        elif Ipm25_avg > 300:
             health_cat = "Hazardous"
             color = [0, 0, 100]
         if display == "on":
@@ -67,7 +60,7 @@ def write_message(Ipm25, Ipm25_live, conn_success, display, active):
             lcd.clear()
             lcd.color = [0, 0, 0]
         # Calculate the number of spaces to pad between current and previous AQI
-        l1_pad_length = 16 - (len(str(Ipm25.get('current'))) + len(str(Ipm25.get('previous'))) + 8)
+        l1_pad_length = 16 - (len(str(Ipm25_avg) + len(str(Ipm25_live) + 8)
         if active == True:
             online_status = next(spinner)
         else:
@@ -75,7 +68,7 @@ def write_message(Ipm25, Ipm25_live, conn_success, display, active):
         l2_pad_length = 16 - (len(health_cat) + len(online_status))
         message = (
                 "AQI: "
-                + str(Ipm25.get('current'))
+                + str(Ipm25_avg)
                 + ' ' * l1_pad_length
                 + "L: "
                 + str(Ipm25_live)
@@ -111,40 +104,26 @@ def write_spinner(conn_success, display, active):
         sleep(2)
 
 
-def get_sensor_reading(sensor_id, connection_url, data_mode):
+def get_sensor_reading(sensor_id, connection_url):
     try:
-        if data_mode == 'local':
-            live_flag = "?live=true"
-            connection_string = connection_url
-            live_connection_string = connection_url + live_flag
-            response = requests.get(connection_string)
-            live_response = requests.get(live_connection_string)
-            # Parse response for printing to console
-            json_response = response.json()
-            if response.status_code == 200:
-                print(json.dumps(json_response, indent=4, sort_keys=True))
-                sensor_reading = json.loads(response.text)
-                live_sensor_reading = json.loads(live_response.text)
-            else:
-                print("error status code not 200")
-                raise requests.exceptions.RequestException
-            pm2_5_reading = sensor_reading['pm2_5_atm']
-            pm2_5_reading_live = live_sensor_reading['pm2_5_atm']
-            conn_success = True
-            return pm2_5_reading, pm2_5_reading_live, conn_success
-        elif data_mode == 'api':
-            connection_string = connection_url + sensor_id 
-            header = {"X-API-Key":config.X_API_Key}
-            response = requests.get(connection_string, headers=header)
-            if response.status_code == 200:
-                print(response.text)
-                sensor_reading = json.loads(response.text)
-            else:
-                print("error status code not 200")
-                raise requests.exceptions.RequestException
-            pm2_5_reading = sensor_reading['sensor']['pm2.5_a']
-            conn_success = True
-            return pm2_5_reading, conn_success
+        live_flag = "?live=true"
+        avg_connection_string = connection_url
+        live_connection_string = connection_url + live_flag
+        avg_response = requests.get(avg_connection_string)
+        live_response = requests.get(live_connection_string)
+        # Parse response for printing to console
+        json_response = live_response.json()
+        if avg_response.status_code == 200:
+            print(json.dumps(json_response, indent=4, sort_keys=True))
+            avg_sensor_reading = json.loads(avg_response.text)
+            live_sensor_reading = json.loads(live_response.text)
+        else:
+            print("error status code not 200")
+            raise requests.exceptions.RequestException
+        pm2_5_reading_avg = avg_sensor_reading['pm2_5_atm']
+        pm2_5_reading_live = live_sensor_reading['pm2_5_atm']
+        conn_success = True
+        return pm2_5_reading_avg, pm2_5_reading_live, conn_success
     except requests.exceptions.RequestException as e:
         conn_success = False
         print("Request Exception: %s" % e)
@@ -207,21 +186,19 @@ def calc_aqi(PM2_5):
 try:
     display = "on"
     active = True
-    Ipm25 = {'current' : 0, 'previous': 0}
-    reading, live_reading, conn_success = get_sensor_reading(sensor_id, connection_url, data_mode)
+    avg_reading, live_reading, conn_success = get_sensor_reading(sensor_id, connection_url)
     if conn_success:
-        Ipm25['previous'] = calc_aqi(reading)
+        Ipm25_avg = calc_aqi(avg_reading)
     sleep(1)
     while 1:
         if (5 < datetime.datetime.now().hour <= 22) and (active == True):
-            reading, live_reading, conn_success = get_sensor_reading(sensor_id, connection_url, data_mode)
+            avg_reading, live_reading, conn_success = get_sensor_reading(sensor_id, connection_url)
             if conn_success:
-                Ipm25['previous'] = Ipm25.get('current')
-                Ipm25['current'] = calc_aqi(reading)
+                Ipm25_avg = calc_aqi(avg_reading)
                 Ipm25_live = calc_aqi(live_reading)
         elif 22 < datetime.datetime.now().hour < 5:
             active = False
-        write_message(Ipm25, Ipm25_live, conn_success,  display, active)
+        write_message(Ipm25_avg, Ipm25_live, conn_success,  display, active)
         delay_loop_start = datetime.datetime.now()
         elapsed_time = datetime.datetime.now() - delay_loop_start
         while elapsed_time.seconds <= 5:
@@ -234,7 +211,7 @@ try:
                 elif display == "off":
                     display = "on"
                     active = True
-                write_message(Ipm25, Ipm25_live, conn_success, display, active)
+                write_message(Ipm25_avg, Ipm25_live, conn_success, display, active)
             elif lcd.right_button:
                 if active == True:
                     active = False

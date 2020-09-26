@@ -35,7 +35,7 @@ data_mode = 'local'
 if data_mode == 'api':
     connection_url = "https://api.purpleair.com/v1/sensors/"
 elif data_mode == 'local':
-    connection_url = "http://192.168.1.225/json"
+    connection_url = "http://192.168.1.225/json?live=TRUE"
 
 sensor_id = "9208"
 #sensor_id = "27815"

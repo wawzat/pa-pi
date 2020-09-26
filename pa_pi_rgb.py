@@ -117,9 +117,9 @@ def get_sensor_reading(sensor_id, connection_url, data_mode):
             connection_string = connection_url
             response = requests.get(connection_string)
             # Parse response for printing to console
-            parsed_response = json.loads(response)
+            json_response = response.json()
             if response.status_code == 200:
-                print(json.dumps(parsed_response, indent=4, sort_keys=True))
+                print(json.dumps(json_response, indent=4, sort_keys=True))
                 sensor_reading = json.loads(response.text)
             else:
                 print("error status code not 200")

@@ -110,7 +110,7 @@ def get_sensor_reading(connection_url):
         live_response = requests.get(live_connection_string)
         # Parse response for printing to console
         json_response = live_response.json()
-        if (avg_response.status_code == 200 and live_response.status_code == 200:
+        if (avg_response.status_code == 200 and live_response.status_code == 200):
             print(json.dumps(json_response, indent=4, sort_keys=True))
             avg_sensor_reading = json.loads(avg_response.text)
             live_sensor_reading = json.loads(live_response.text)

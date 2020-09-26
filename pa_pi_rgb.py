@@ -129,7 +129,7 @@ def get_sensor_reading(sensor_id, connection_url, data_mode):
                 print("error status code not 200")
                 raise requests.exceptions.RequestException
             pm2_5_reading = sensor_reading['pm2_5_atm']
-            pm2_5_reading_live = live_sensor_reading('pm2_5_atm')
+            pm2_5_reading_live = live_sensor_reading['pm2_5_atm']
             conn_success = True
             return pm2_5_reading, pm2_5_reading_live, conn_success
         elif data_mode == 'api':

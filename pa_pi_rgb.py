@@ -67,7 +67,7 @@ def write_message(Ipm25_avg, Ipm25_live, conn_success, display, active):
                 "AQI: A "
                 + str(Ipm25_avg)
                 + ' ' * l1_pad_length
-                + "L: "
+                + "L "
                 + str(Ipm25_live)
                 + "\n" 
                 + health_cat

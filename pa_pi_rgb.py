@@ -201,7 +201,8 @@ try:
         write_message(Ipm25_avg, Ipm25_live, conn_success,  display, active)
         delay_loop_start = datetime.datetime.now()
         elapsed_time = datetime.datetime.now() - delay_loop_start
-        while elapsed_time.seconds <= 5:
+        #Determines refresh interval, add 2 sec to value to get actual refresh interval (+/-)
+        while elapsed_time.seconds <= 3:
             elapsed_time = datetime.datetime.now() - delay_loop_start
             write_spinner(conn_success, display, active)
             if lcd.select_button:

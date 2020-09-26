@@ -216,7 +216,7 @@ try:
         write_message(Ipm25, conn_success,  display, active)
         delay_loop_start = datetime.datetime.now()
         elapsed_time = datetime.datetime.now() - delay_loop_start
-        while elapsed_time.seconds <= 12:
+        while elapsed_time.seconds <= 5:
             elapsed_time = datetime.datetime.now() - delay_loop_start
             write_spinner(conn_success, display, active)
             if lcd.select_button:

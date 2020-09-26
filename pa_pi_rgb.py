@@ -1,6 +1,6 @@
 # Gets PurpleAir readings from API or locally, converts to "AQI" and displays on
 # Raspberry PI with Adafruit RGB Positive LCD+Keypad Kit
-# James S. Lucas - 20200912
+# James S. Lucas - 20200926
 import json
 import requests
 from time import sleep
@@ -216,7 +216,7 @@ try:
         write_message(Ipm25, conn_success,  display, active)
         delay_loop_start = datetime.datetime.now()
         elapsed_time = datetime.datetime.now() - delay_loop_start
-        while elapsed_time.seconds <= 92:
+        while elapsed_time.seconds <= 12:
             elapsed_time = datetime.datetime.now() - delay_loop_start
             write_spinner(conn_success, display, active)
             if lcd.select_button:

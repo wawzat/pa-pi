@@ -124,7 +124,7 @@ def get_sensor_reading(sensor_id, connection_url, data_mode):
             if response.status_code == 200:
                 print(json.dumps(json_response, indent=4, sort_keys=True))
                 sensor_reading = json.loads(response.text)
-                live_sensor_reading = json.loads(live_response)
+                live_sensor_reading = json.loads(live_response.text)
             else:
                 print("error status code not 200")
                 raise requests.exceptions.RequestException

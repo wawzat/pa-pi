@@ -218,7 +218,7 @@ try:
             if conn_success:
                 Ipm25['previous'] = Ipm25.get('current')
                 Ipm25['current'] = calc_aqi(reading)
-                Ipm25_live = calq_aqi(live_reading)
+                Ipm25_live = calc_aqi(live_reading)
         elif 22 < datetime.datetime.now().hour < 5:
             active = False
         write_message(Ipm25, Ipm25_live, conn_success,  display, active)

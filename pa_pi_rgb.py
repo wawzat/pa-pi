@@ -30,9 +30,6 @@ spinner = itertools.cycle(['-', '/', '|', '\x00'])
 
 connection_url = "http://192.168.1.225/json"
 
-sensor_id = "9208"
-#sensor_id = "27815"
-
 
 def write_message(Ipm25_avg, Ipm25_live, conn_success, display, active):
     if conn_success:
@@ -60,14 +57,14 @@ def write_message(Ipm25_avg, Ipm25_live, conn_success, display, active):
             lcd.clear()
             lcd.color = [0, 0, 0]
         # Calculate the number of spaces to pad between current and previous AQI
-        l1_pad_length = 16 - (len(str(Ipm25_avg)) + len(str(Ipm25_live)) + 8)
+        l1_pad_length = 16 - (len(str(Ipm25_avg)) + len(str(Ipm25_live)) + 10)
         if active == True:
             online_status = next(spinner)
         else:
             online_status = ""
         l2_pad_length = 16 - (len(health_cat) + len(online_status))
         message = (
-                "AQI: "
+                "AQI: A "
                 + str(Ipm25_avg)
                 + ' ' * l1_pad_length
                 + "L: "
@@ -87,7 +84,7 @@ def write_message(Ipm25_avg, Ipm25_live, conn_success, display, active):
         sleep(2)
 
 
-def write_spinner(conn_success, display, active):
+def write_spinner(conn_success, active):
     # Updates a spinning slash on the bottom right of the display.
     if conn_success:
         if active == True:
@@ -104,7 +101,7 @@ def write_spinner(conn_success, display, active):
         sleep(2)
 
 
-def get_sensor_reading(sensor_id, connection_url):
+def get_sensor_reading(connection_url):
     try:
         live_flag = "?live=true"
         avg_connection_string = connection_url
@@ -113,16 +110,16 @@ def get_sensor_reading(sensor_id, connection_url):
         live_response = requests.get(live_connection_string)
         # Parse response for printing to console
         json_response = live_response.json()
-        if avg_response.status_code == 200:
+        if (avg_response.status_code == 200 and live_response.status_code == 200:
             print(json.dumps(json_response, indent=4, sort_keys=True))
             avg_sensor_reading = json.loads(avg_response.text)
             live_sensor_reading = json.loads(live_response.text)
+            pm2_5_reading_avg = avg_sensor_reading['pm2_5_atm']
+            pm2_5_reading_live = live_sensor_reading['pm2_5_atm']
+            conn_success = True
         else:
             print("error status code not 200")
             raise requests.exceptions.RequestException
-        pm2_5_reading_avg = avg_sensor_reading['pm2_5_atm']
-        pm2_5_reading_live = live_sensor_reading['pm2_5_atm']
-        conn_success = True
         return pm2_5_reading_avg, pm2_5_reading_live, conn_success
     except requests.exceptions.RequestException as e:
         conn_success = False
@@ -186,13 +183,13 @@ def calc_aqi(PM2_5):
 try:
     display = "on"
     active = True
-    avg_reading, live_reading, conn_success = get_sensor_reading(sensor_id, connection_url)
+    avg_reading, live_reading, conn_success = get_sensor_reading(connection_url)
     if conn_success:
         Ipm25_avg = calc_aqi(avg_reading)
     sleep(1)
     while 1:
         if (5 < datetime.datetime.now().hour <= 22) and (active == True):
-            avg_reading, live_reading, conn_success = get_sensor_reading(sensor_id, connection_url)
+            avg_reading, live_reading, conn_success = get_sensor_reading(connection_url)
             if conn_success:
                 Ipm25_avg = calc_aqi(avg_reading)
                 Ipm25_live = calc_aqi(live_reading)
@@ -204,7 +201,7 @@ try:
         #Determines refresh interval, add 2 sec to value to get actual refresh interval (+/-)
         while elapsed_time.seconds <= 3:
             elapsed_time = datetime.datetime.now() - delay_loop_start
-            write_spinner(conn_success, display, active)
+            write_spinner(conn_success, active)
             if lcd.select_button:
                 if display == "on":
                     display = "off"
@@ -218,7 +215,7 @@ try:
                     active = False
                 elif active == False:
                     active = True
-                write_spinner(conn_success, display, active)
+                write_spinner(conn_success, active)
             sleep(.01)
 
 except KeyboardInterrupt:

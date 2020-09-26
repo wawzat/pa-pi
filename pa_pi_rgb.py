@@ -60,7 +60,7 @@ def write_message(Ipm25_avg, Ipm25_live, conn_success, display, active):
             lcd.clear()
             lcd.color = [0, 0, 0]
         # Calculate the number of spaces to pad between current and previous AQI
-        l1_pad_length = 16 - (len(str(Ipm25_avg) + len(str(Ipm25_live) + 8)
+        l1_pad_length = 16 - (len(str(Ipm25_avg) + len(str(Ipm25_live) + 8)))
         if active == True:
             online_status = next(spinner)
         else:

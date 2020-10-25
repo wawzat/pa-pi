@@ -121,7 +121,7 @@ def get_sensor_reading(connection_url):
             print("error status code not 200")
             raise requests.exceptions.RequestException
         return pm2_5_reading_avg, pm2_5_reading_live, conn_success
-    except requests.exceptions.RequestException as e:
+    except (requests.exceptions.RequestException, ValueError) as e:
         conn_success = False
         print("Request Exception: %s" % e)
         return 0, conn_success

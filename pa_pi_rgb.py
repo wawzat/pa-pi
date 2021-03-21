@@ -31,7 +31,7 @@ spinner = itertools.cycle(['-', '/', '|', '\x00'])
 connection_url = "http://192.168.1.225/json"
 
 
-def write_message(Ipm25_avg, Ipm25_live, conn_success, display, active):
+def write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, active):
     if conn_success:
         if Ipm25_avg <= 50:
             health_cat = "Good"
@@ -67,7 +67,7 @@ def write_message(Ipm25_avg, Ipm25_live, conn_success, display, active):
                 "AQI: A "
                 + str(Ipm25_avg)
                 + ' ' * l1_pad_length
-                + "L "
+                + confidence
                 + str(Ipm25_live)
                 + "\n" 
                 + health_cat
@@ -116,11 +116,23 @@ def get_sensor_reading(connection_url):
             live_sensor_reading = json.loads(live_response.text)
             pm2_5_reading_avg = (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']) / 2
             pm2_5_reading_live = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
+            #Confidence
+            diff_ab = abs(live_sensor_reading['pm2_5_atm'] - live_sensor_reading['pm2_5_atm_b'])
+            pct_diff_ab = (
+                abs(live_sensor_reading['pm2_5_atm'] - live_sensor_reading['pm2_5_atm_b'])
+                 / (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']/2)
+            )
+            if diff_ab >= 5 or pct_diff_ab >= .7:
+                #This will be displayed as a "C" next to live reading do to confidence issue
+                confidence = 'C'
+            else:
+                #This will be displayed as a "L" next to live reading meaning live reading (cofidence is fine)
+                confidence = 'L'
             conn_success = True
         else:
             print("error status code not 200")
             raise requests.exceptions.RequestException
-        return pm2_5_reading_avg, pm2_5_reading_live, conn_success
+        return pm2_5_reading_avg, pm2_5_reading_live, confidence, conn_success
     except requests.exceptions.RequestException as e:
         conn_success = False
         print("Request Exception: %s" % e)
@@ -183,19 +195,19 @@ def calc_aqi(PM2_5):
 try:
     display = "on"
     active = True
-    avg_reading, live_reading, conn_success = get_sensor_reading(connection_url)
+    avg_reading, live_reading, confidence, conn_success = get_sensor_reading(connection_url)
     if conn_success:
         Ipm25_avg = calc_aqi(avg_reading)
     sleep(1)
     while 1:
         if (5 < datetime.datetime.now().hour <= 22) and (active == True):
-            avg_reading, live_reading, conn_success = get_sensor_reading(connection_url)
+            avg_reading, live_reading, confidence, conn_success = get_sensor_reading(connection_url)
             if conn_success:
                 Ipm25_avg = calc_aqi(avg_reading)
                 Ipm25_live = calc_aqi(live_reading)
         elif 22 < datetime.datetime.now().hour < 5:
             active = False
-        write_message(Ipm25_avg, Ipm25_live, conn_success,  display, active)
+        write_message(Ipm25_avg, Ipm25_live, confidence, conn_success,  display, active)
         delay_loop_start = datetime.datetime.now()
         elapsed_time = datetime.datetime.now() - delay_loop_start
         #Determines refresh interval, add 2 sec to value to get actual refresh interval (+/-)
@@ -209,7 +221,7 @@ try:
                 elif display == "off":
                     display = "on"
                     active = True
-                write_message(Ipm25_avg, Ipm25_live, conn_success, display, active)
+                write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, active)
             elif lcd.right_button:
                 if active == True:
                     active = False

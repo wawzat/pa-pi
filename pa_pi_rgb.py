@@ -114,8 +114,8 @@ def get_sensor_reading(connection_url):
             print(json.dumps(json_response, indent=4, sort_keys=True))
             avg_sensor_reading = json.loads(avg_response.text)
             live_sensor_reading = json.loads(live_response.text)
-            pm2_5_reading_avg = avg_sensor_reading['pm2_5_atm']
-            pm2_5_reading_live = live_sensor_reading['pm2_5_atm']
+            pm2_5_reading_avg = (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']) / 2
+            pm2_5_reading_live = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
             conn_success = True
         else:
             print("error status code not 200")

@@ -64,10 +64,10 @@ def write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, acti
             online_status = ""
         l2_pad_length = 16 - (len(health_cat) + len(online_status))
         message = (
-                "AQI: A "
+                "AQI: " + confidence + " "
                 + str(Ipm25_avg)
                 + ' ' * l1_pad_length
-                + confidence + " "
+                + "L " 
                 + str(Ipm25_live)
                 + "\n" 
                 + health_cat
@@ -117,17 +117,17 @@ def get_sensor_reading(connection_url):
             pm2_5_reading_avg = (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']) / 2
             pm2_5_reading_live = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
             #Confidence
-            diff_ab = abs(live_sensor_reading['pm2_5_atm'] - live_sensor_reading['pm2_5_atm_b'])
+            diff_ab = abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
             pct_diff_ab = (
-                abs(live_sensor_reading['pm2_5_atm'] - live_sensor_reading['pm2_5_atm_b'])
-                 / (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']/2)
+                abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
+                 / (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']/2)
             )
             if diff_ab >= 5 or pct_diff_ab >= .7:
-                #This will be displayed as a "C" next to live reading do to confidence issue
+                #This will be displayed as a "C" next to average reading instead of "A" meaning confidence issue
                 confidence = 'C'
             else:
-                #This will be displayed as a "L" next to live reading meaning live reading (cofidence is fine)
-                confidence = 'L'
+                #This will be displayed as a "L" next to average reading meaning average reading displayed (cofidence is fine)
+                confidence = 'A'
             conn_success = True
         else:
             print("error status code not 200")

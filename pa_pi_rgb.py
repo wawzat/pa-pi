@@ -116,7 +116,8 @@ def get_sensor_reading(connection_url):
             live_sensor_reading = json.loads(live_response.text)
             pm2_5_reading_avg = (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']) / 2
             pm2_5_reading_live = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
-            #Confidence
+            # Confidence
+            # Flag if difference >= 5ug/m^3 or difference >= .7
             diff_ab = abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
             pct_diff_ab = (
                 abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
@@ -126,7 +127,7 @@ def get_sensor_reading(connection_url):
                 #This will be displayed as a "C" next to average reading instead of "A" meaning confidence issue
                 confidence = 'C'
             else:
-                #This will be displayed as a "L" next to average reading meaning average reading displayed (cofidence is fine)
+                #This will be displayed as a "A" next to average reading meaning average reading displayed (cofidence is good)
                 confidence = 'A'
             conn_success = True
         else:

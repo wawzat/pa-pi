@@ -119,10 +119,13 @@ def get_sensor_reading(connection_url):
             # Confidence
             # Flag if difference >= 5ug/m^3 or difference >= .7
             diff_ab = abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
-            pct_diff_ab = (
-                abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
-                 / (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']/2)
-            )
+            if avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b'] != 0:
+                pct_diff_ab = (
+                    abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
+                    / (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']/2)
+                )
+            else:
+                pct_diff_ab = 0
             if diff_ab >= 5 or pct_diff_ab >= .7:
                 #This will be displayed as a "C" next to average reading instead of "A" meaning confidence issue
                 confidence = 'C'

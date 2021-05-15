@@ -1,5 +1,5 @@
 # pa-pi
-![PA Pi](./images/20200912_121631_small.jpg)  
+![PA Pi](./images/20200912_121631_small.jpg =427x320)  
 The three files in this repo are independent of each other.  
   
 pa_pi.py: gets current reading for a hard coded PurpleAir sensor from PurpleAir API and displays on Raspberry Pi OLED display  

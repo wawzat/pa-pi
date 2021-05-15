@@ -1,6 +1,6 @@
-# Gets PurpleAir readings from API or locally, converts to "AQI" and displays on
+# Gets PurpleAir readings from PurpleAir sensor on local LAN, converts to "AQI" and displays on
 # Raspberry PI with Adafruit RGB Positive LCD+Keypad Kit
-# James S. Lucas - 20200926
+# James S. Lucas - 20210515
 import json
 import requests
 from time import sleep
@@ -8,7 +8,6 @@ import datetime
 import sys
 import traceback
 import itertools
-import config
  
 import board
 import busio

@@ -142,7 +142,7 @@ def get_sensor_reading(connection_url):
         return 0, 0, conn_success
     except requests.exceptions.ConnectionError as e:
         conn_success = False
-        print("Connection Error": %s" % e)
+        print("Connection Error: %s" % e)
         return 0, 0, conn_success
 
 

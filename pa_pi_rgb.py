@@ -1,6 +1,6 @@
 # Gets PurpleAir readings from PurpleAir sensor on local LAN, converts to "AQI" and displays on
 # Raspberry PI with Adafruit RGB Positive LCD+Keypad Kit
-# James S. Lucas - 20210515
+# James S. Lucas - 20211230
 import json
 import requests
 from time import sleep
@@ -139,6 +139,10 @@ def get_sensor_reading(connection_url):
     except requests.exceptions.RequestException as e:
         conn_success = False
         print("Request Exception: %s" % e)
+        return 0, 0, conn_success
+    except requests.exceptions.ConnectionError as e:
+        conn_success = False
+        print("Connection Error": %s" % e)
         return 0, 0, conn_success
 
 

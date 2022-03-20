@@ -27,7 +27,7 @@ lcd.create_char(0, backslash)
 
 spinner = itertools.cycle(['-', '/', '|', '\x00'])
 
-connection_url = "http://192.168.1.36/json"
+connection_url = "http://192.168.20.36/json"
 
 
 def write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, active):

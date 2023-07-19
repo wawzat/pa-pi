@@ -1,6 +1,6 @@
 # Gets PurpleAir readings from PurpleAir sensor on local LAN, converts to "AQI" and displays on
 # Raspberry PI with Adafruit RGB Positive LCD+Keypad Kit
-# James S. Lucas - 20211230
+# James S. Lucas - 20230719
 import json
 import requests
 from time import sleep
@@ -30,7 +30,56 @@ spinner = itertools.cycle(['-', '/', '|', '\x00'])
 connection_url = "http://192.168.20.36/json"
 
 
+def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
+    """
+    A decorator function that retries a function call a specified number of times if it raises a specified exception.
+
+    Args:
+        max_attempts (int): The maximum number of attempts to retry the function call.
+        delay (int): The initial delay in seconds before the first retry.
+        escalation (int): The amount of time in seconds to increase the delay by for each subsequent retry.
+        exception (tuple): A tuple of exceptions to catch and retry on.
+
+    Returns:
+        The decorated function.
+
+    Raises:
+        The same exception that the decorated function raises if the maximum number of attempts is reached.
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except exception as e:
+                    adjusted_delay = delay + escalation * attempts
+                    attempts += 1
+                    logger.exception(f'Error in {func.__name__}(): attempt #{attempts} of {max_attempts}')
+                    if attempts < max_attempts:
+                        sleep(adjusted_delay)
+            logger.exception(f'Error in {func.__name__}: max of {max_attempts} attempts reached')
+            print(f'Error in {func.__name__}(): max of {max_attempts} attempts reached')
+            sys.exit(1)
+        return wrapper
+    return decorator
+
+
 def write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, active):
+    """
+    This function is responsible for writing a message to the LCD display.
+
+    Args:
+        Ipm25_avg (float): The average PM2.5 value.
+        Ipm25_live (float): The live PM2.5 value.
+        confidence (float): The confidence level of the readings.
+        conn_success (bool): A flag indicating if the connection to the sensor was successful.
+        display (str): A string indicating if the display is on or off.
+        active (bool): A flag indicating if the sensor is active.
+
+    Returns:
+        None
+    """
     if conn_success:
         if Ipm25_avg <= 50:
             health_cat = "Good"
@@ -83,7 +132,18 @@ def write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, acti
         sleep(2)
 
 
+
 def write_spinner(conn_success, active):
+    """
+    This function is used to update a spinning slash on the bottom right of the display.
+    
+    Parameters:
+    conn_success (bool): A boolean value indicating whether the connection was successful or not.
+    active (bool): A boolean value indicating whether the spinner should be active or not.
+
+    Returns:
+    None: This function does not return anything. It updates the LCD display with a spinning slash or a connection error message.
+    """
     # Updates a spinning slash on the bottom right of the display.
     if conn_success:
         if active == True:
@@ -100,58 +160,78 @@ def write_spinner(conn_success, active):
         sleep(2)
 
 
+@retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
 def get_sensor_reading(connection_url):
-    try:
-        live_flag = "?live=true"
-        avg_connection_string = connection_url
-        live_connection_string = connection_url + live_flag
-        avg_response = requests.get(avg_connection_string)
-        live_response = requests.get(live_connection_string)
-        # Parse response for printing to console
-        json_response = live_response.json()
-        if (avg_response.status_code == 200 and live_response.status_code == 200):
-            print(json.dumps(json_response, indent=4, sort_keys=True))
-            avg_sensor_reading = json.loads(avg_response.text)
-            live_sensor_reading = json.loads(live_response.text)
-            pm2_5_reading_avg = (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']) / 2
-            pm2_5_reading_live = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
-            # Confidence
-            # Flag if difference >= 5ug/m^3 or difference >= .7
-            diff_ab = abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
-            if avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b'] != 0:
-                pct_diff_ab = (
-                    abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
-                    / (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']/2)
-                )
-            else:
-                pct_diff_ab = 0
-            if diff_ab >= 5 or pct_diff_ab >= .7:
-                #This will be displayed as a "C" next to average reading instead of "A" meaning confidence issue
-                confidence = 'C'
-            else:
-                #This will be displayed as a "A" next to average reading meaning average reading displayed (cofidence is good)
-                confidence = 'A'
-            conn_success = True
+    """
+    This function is used to get sensor readings from a PurpleAir sensor.
+
+    Parameters:
+    connection_url (str): The URL of the PurpleAir sensor.
+
+    Returns:
+    tuple: A tuple containing the average response and live response from the sensor.
+    """
+    live_flag = "?live=true"
+    avg_connection_string = connection_url
+    live_connection_string = connection_url + live_flag
+    avg_response = requests.get(avg_connection_string)
+    live_response = requests.get(live_connection_string)
+    return avg_response, live_response
+
+
+def parse_sensor_reading(connection_url):
+    """
+    This function is used to parse sensor readings from a PurpleAir sensor.
+
+    Parameters:
+    connection_url (str): The URL of the PurpleAir sensor.
+
+    Returns:
+    tuple: A tuple containing the average PM2.5 reading, live PM2.5 reading, confidence level, and connection success status.
+    """
+    avg_response, live_response = get_sensor_reading(connection_url)
+    # Parse response for printing to console
+    json_response = live_response.json()
+    if (avg_response.ok and live_response.ok):
+        print(json.dumps(json_response, indent=4, sort_keys=True))
+        avg_sensor_reading = json.loads(avg_response.text)
+        live_sensor_reading = json.loads(live_response.text)
+        pm2_5_reading_avg = (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']) / 2
+        pm2_5_reading_live = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
+        # Confidence
+        # Flag if difference >= 5ug/m^3 or difference >= .7
+        diff_ab = abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
+        if avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b'] != 0:
+            pct_diff_ab = (
+                abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
+                / (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']/2)
+            )
         else:
-            print("error status code not 200")
-            raise requests.exceptions.RequestException
-        return pm2_5_reading_avg, pm2_5_reading_live, confidence, conn_success
-    except requests.exceptions.RequestException as e:
+            pct_diff_ab = 0
+        if diff_ab >= 5 or pct_diff_ab >= .7:
+            #This will be displayed as a "C" next to average reading instead of "A" meaning confidence issue
+            confidence = 'C'
+        else:
+            #This will be displayed as a "A" next to average reading meaning average reading displayed (cofidence is good)
+            confidence = 'A'
+        conn_success = True
+    else:
+        print("error status code not 200")
         conn_success = False
-        print("Request Exception: %s" % e)
-        return 0, 0, 0, conn_success
-    except requests.exceptions.ConnectionError as e:
-        conn_success = False
-        print("Connection Error: %s" % e)
-        return 0, 0, 0, conn_success
+        pm2_5_reading_avg, pm2_5_reading_live, confidence = 0, 0, 0
+    return pm2_5_reading_avg, pm2_5_reading_live, confidence, conn_success
 
 
 def calc_aqi(PM2_5):
-    # Function takes the instantaneous PM2.5 value and calculates
-    # "AQI". "AQI" in quotes as this is not an official methodology. AQI is
-    # 24 hour midnight-midnight average. May change to NowCast or other
-    # methodology in the future.
+    """
+    This function is used to calculate the Air Quality Index (AQI) based on the PM2.5 value.
 
+    Parameters:
+    PM2_5 (float): The PM2.5 value for which the AQI is to be calculated.
+
+    Returns:
+    int: The calculated AQI value.
+    """
     # Truncate to one decimal place.
     PM2_5 = int(float(PM2_5) * 10) / 10.0
     if PM2_5 < 0:
@@ -202,13 +282,13 @@ def calc_aqi(PM2_5):
 try:
     display = "on"
     active = True
-    avg_reading, live_reading, confidence, conn_success = get_sensor_reading(connection_url)
+    avg_reading, live_reading, confidence, conn_success = parse_sensor_reading(connection_url)
     if conn_success:
         Ipm25_avg = calc_aqi(avg_reading)
     sleep(1)
     while 1:
         if (5 < datetime.datetime.now().hour <= 22) and (active == True):
-            avg_reading, live_reading, confidence, conn_success = get_sensor_reading(connection_url)
+            avg_reading, live_reading, confidence, conn_success = parse_sensor_reading(connection_url)
             if conn_success:
                 Ipm25_avg = calc_aqi(avg_reading)
                 Ipm25_live = calc_aqi(live_reading)

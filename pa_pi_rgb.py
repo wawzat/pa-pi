@@ -139,11 +139,11 @@ def get_sensor_reading(connection_url):
     except requests.exceptions.RequestException as e:
         conn_success = False
         print("Request Exception: %s" % e)
-        return 0, 0, conn_success
+        return 0, 0, 0, conn_success
     except requests.exceptions.ConnectionError as e:
         conn_success = False
         print("Connection Error: %s" % e)
-        return 0, 0, conn_success
+        return 0, 0, 0, conn_success
 
 
 def calc_aqi(PM2_5):

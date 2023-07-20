@@ -301,7 +301,7 @@ def calc_aqi(PM2_5):
             ))
         return Ipm25
     except Exception as e:
-        pass
+        logger.exception('calc_aqi() exception')
         print("error in calc_aqi() function: %s" % e)
 
 

@@ -132,7 +132,6 @@ def write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, acti
         sleep(2)
 
 
-
 def write_spinner(conn_success, active):
     """
     This function is used to update a spinning slash on the bottom right of the display.
@@ -161,22 +160,36 @@ def write_spinner(conn_success, active):
 
 
 @retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
-def get_sensor_reading(connection_url):
+def get_avg_reading(connection_url):
     """
-    This function is used to get sensor readings from a PurpleAir sensor.
+    This function is used to get the average sensor reading from a PurpleAir sensor.
 
     Parameters:
     connection_url (str): The URL of the PurpleAir sensor.
 
     Returns:
-    tuple: A tuple containing the average response and live response from the sensor.
+    Response: A Response object containing the average sensor reading from the PurpleAir sensor.
+    """
+    avg_connection_string = connection_url
+    avg_response = requests.get(avg_connection_string)
+    return avg_response
+
+
+@retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
+def get_live_reading(connection_url):
+    """
+    This function is used to get the live sensor reading from a PurpleAir sensor.
+
+    Parameters:
+    connection_url (str): The URL of the PurpleAir sensor.
+
+    Returns:
+    Response: A Response object containing the live sensor reading from the PurpleAir sensor.
     """
     live_flag = "?live=true"
-    avg_connection_string = connection_url
     live_connection_string = connection_url + live_flag
-    avg_response = requests.get(avg_connection_string)
     live_response = requests.get(live_connection_string)
-    return avg_response, live_response
+    return live_response
 
 
 def parse_sensor_reading(connection_url):
@@ -189,7 +202,8 @@ def parse_sensor_reading(connection_url):
     Returns:
     tuple: A tuple containing the average PM2.5 reading, live PM2.5 reading, confidence level, and connection success status.
     """
-    avg_response, live_response = get_sensor_reading(connection_url)
+    avg_response = get_avg_reading(connection_url)
+    live_response = get_live_reading(connection_url)
     # Parse response for printing to console
     json_response = live_response.json()
     if (avg_response.ok and live_response.ok):

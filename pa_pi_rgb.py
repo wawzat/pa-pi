@@ -1,12 +1,12 @@
 # Gets PurpleAir readings from PurpleAir sensor on local LAN, converts to "AQI" and displays on
 # Raspberry PI with Adafruit RGB Positive LCD+Keypad Kit
-# James S. Lucas - 20230719
+# James S. Lucas - 20230720
 import json
 import requests
 from time import sleep
 import datetime
 import sys
-import traceback
+import logging
 import itertools
  
 import board
@@ -28,6 +28,18 @@ lcd.create_char(0, backslash)
 spinner = itertools.cycle(['-', '/', '|', '\x00'])
 
 connection_url = "http://192.168.20.36/json"
+
+
+# Creates a logger
+logger = logging.getLogger(__name__)  
+# set log level
+logger.setLevel(logging.WARNING)
+# define file handler and set formatter
+file_handler = logging.FileHandler('log_exception_pa_pi_rgb.log')
+formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
+file_handler.setFormatter(formatter)
+# add file handler to logger
+logger.addHandler(file_handler)
 
 
 def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
@@ -125,6 +137,7 @@ def write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, acti
     else:
         lcd.clear()
         color = [100, 0, 0]
+        logger.error('Connection error')
         message = "Connection Error"
     if display == "on":
         lcd.message = message
@@ -192,9 +205,9 @@ def get_live_reading(connection_url):
     return live_response
 
 
-def parse_sensor_reading(connection_url):
+def process_sensor_reading(connection_url):
     """
-    This function is used to parse sensor readings from a PurpleAir sensor.
+    This function is used to process sensor readings from a PurpleAir sensor.
 
     Parameters:
     connection_url (str): The URL of the PurpleAir sensor.
@@ -290,19 +303,18 @@ def calc_aqi(PM2_5):
     except Exception as e:
         pass
         print("error in calc_aqi() function: %s" % e)
-        traceback.print_exc(file=sys.stdout)
 
 
 try:
     display = "on"
     active = True
-    avg_reading, live_reading, confidence, conn_success = parse_sensor_reading(connection_url)
+    avg_reading, live_reading, confidence, conn_success = process_sensor_reading(connection_url)
     if conn_success:
         Ipm25_avg = calc_aqi(avg_reading)
     sleep(1)
     while 1:
         if (5 < datetime.datetime.now().hour <= 22) and (active == True):
-            avg_reading, live_reading, confidence, conn_success = parse_sensor_reading(connection_url)
+            avg_reading, live_reading, confidence, conn_success = process_sensor_reading(connection_url)
             if conn_success:
                 Ipm25_avg = calc_aqi(avg_reading)
                 Ipm25_live = calc_aqi(live_reading)

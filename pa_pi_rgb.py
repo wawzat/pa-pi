@@ -205,6 +205,27 @@ def get_live_reading(connection_url):
     return live_response
 
 
+def confidence_check(sensor_response):
+    sensor_reading = json.loads(sensor_response.text)
+    # Confidence
+    # Flag if difference >= 5ug/m^3 or difference >= .7
+    diff_ab = abs(sensor_reading['pm2_5_atm'] - sensor_reading['pm2_5_atm_b'])
+    if sensor_reading['pm2_5_atm'] + sensor_reading['pm2_5_atm_b'] != 0:
+        pct_diff_ab = (
+            abs(sensor_reading['pm2_5_atm'] - sensor_reading['pm2_5_atm_b'])
+            / (sensor_reading['pm2_5_atm'] + sensor_reading['pm2_5_atm_b']/2)
+        )
+    else:
+        pct_diff_ab = 0
+    if diff_ab >= 5 or pct_diff_ab >= .7:
+        #This will be displayed as a "C" next to average reading instead of "A" meaning confidence issue
+        confidence = 'C'
+    else:
+        #This will be displayed as a "A" next to average reading meaning average reading displayed (cofidence is good)
+        confidence = 'A'
+    return confidence
+
+
 def process_sensor_reading(connection_url):
     """
     This function is used to process sensor readings from a PurpleAir sensor.
@@ -219,31 +240,21 @@ def process_sensor_reading(connection_url):
     live_response = get_live_reading(connection_url)
     # Parse response for printing to console
     if (avg_response.ok and live_response.ok):
+        conn_success = True
         #json_response = live_response.json()
         #print(json.dumps(json_response, indent=4, sort_keys=True))
-        avg_sensor_reading = json.loads(avg_response.text)
-        live_sensor_reading = json.loads(live_response.text)
         pm2_5_reading_avg = (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']) / 2
         pm2_5_reading_live = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
         # Confidence
-        # Flag if difference >= 5ug/m^3 or difference >= .7
-        diff_ab = abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
-        if avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b'] != 0:
-            pct_diff_ab = (
-                abs(avg_sensor_reading['pm2_5_atm'] - avg_sensor_reading['pm2_5_atm_b'])
-                / (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']/2)
-            )
-        else:
-            pct_diff_ab = 0
-        if diff_ab >= 5 or pct_diff_ab >= .7:
-            #This will be displayed as a "C" next to average reading instead of "A" meaning confidence issue
-            confidence = 'C'
-        else:
-            #This will be displayed as a "A" next to average reading meaning average reading displayed (cofidence is good)
+        avg_confidence = confidence_check(avg_response)
+        live_confidence = confidence_check(live_response)
+        if avg_confidence == 'A' and live_confidence == 'A':
             confidence = 'A'
-        conn_success = True
+        else:
+            confidence = 'C'
     else:
-        print("error status code not 200")
+        print('Error status code not ok')
+        logger.error('Error status code not ok')
         conn_success = False
         pm2_5_reading_avg, pm2_5_reading_live, confidence = 0, 0, 0
     return pm2_5_reading_avg, pm2_5_reading_live, confidence, conn_success

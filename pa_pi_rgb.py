@@ -219,10 +219,10 @@ def confidence_check(sensor_response):
         pct_diff_ab = 0
     if diff_ab >= 5 or pct_diff_ab >= .7:
         #This will be displayed as a "C" next to average reading instead of "A" meaning confidence issue
-        confidence = 'c'
+        confidence = ' '
     else:
         #This will be displayed as a "A" next to average reading meaning average reading displayed (cofidence is good)
-        confidence = ' '
+        confidence = 'c'
     return confidence
 
 

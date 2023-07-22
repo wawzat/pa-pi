@@ -77,7 +77,7 @@ def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
     return decorator
 
 
-def write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, active):
+def write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_success, display, active):
     """
     This function is responsible for writing a message to the LCD display.
 
@@ -124,10 +124,10 @@ def write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, acti
             online_status = ""
         l2_pad_length = 16 - (len(health_cat) + len(online_status))
         message = (
-                "AQI: " + confidence + " "
+                "AQI: A" + avg_confidence
                 + str(Ipm25_avg)
                 + ' ' * l1_pad_length
-                + "L " 
+                + "L" + live_confidence
                 + str(Ipm25_live)
                 + "\n" 
                 + health_cat
@@ -219,10 +219,10 @@ def confidence_check(sensor_response):
         pct_diff_ab = 0
     if diff_ab >= 5 or pct_diff_ab >= .7:
         #This will be displayed as a "C" next to average reading instead of "A" meaning confidence issue
-        confidence = 'C'
+        confidence = 'c'
     else:
         #This will be displayed as a "A" next to average reading meaning average reading displayed (cofidence is good)
-        confidence = 'A'
+        confidence = ' '
     return confidence
 
 
@@ -250,16 +250,12 @@ def process_sensor_reading(connection_url):
         # Confidence
         avg_confidence = confidence_check(avg_response)
         live_confidence = confidence_check(live_response)
-        if avg_confidence == 'A' and live_confidence == 'A':
-            confidence = 'A'
-        else:
-            confidence = 'C'
     else:
         print('Error status code not ok')
         logger.error('Error status code not ok')
         conn_success = False
-        pm2_5_reading_avg, pm2_5_reading_live, confidence = 0, 0, 0
-    return pm2_5_reading_avg, pm2_5_reading_live, confidence, conn_success
+        pm2_5_reading_avg, pm2_5_reading_live, avg_confidence, live_confidence = 0, 0, 0, 0
+    return pm2_5_reading_avg, pm2_5_reading_live, avg_confidence, live_confidence, conn_success
 
 
 def calc_aqi(PM2_5):
@@ -321,19 +317,19 @@ def calc_aqi(PM2_5):
 try:
     display = "on"
     active = True
-    avg_reading, live_reading, confidence, conn_success = process_sensor_reading(connection_url)
+    avg_reading, live_reading, avg_confidence, live_confidence, conn_success = process_sensor_reading(connection_url)
     if conn_success:
         Ipm25_avg = calc_aqi(avg_reading)
     sleep(1)
     while 1:
         if (5 < datetime.datetime.now().hour <= 22) and (active == True):
-            avg_reading, live_reading, confidence, conn_success = process_sensor_reading(connection_url)
+            avg_reading, live_reading, avg_confidence, live_confidence, conn_success = process_sensor_reading(connection_url)
             if conn_success:
                 Ipm25_avg = calc_aqi(avg_reading)
                 Ipm25_live = calc_aqi(live_reading)
         elif 22 < datetime.datetime.now().hour < 5:
             active = False
-        write_message(Ipm25_avg, Ipm25_live, confidence, conn_success,  display, active)
+        write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_success,  display, active)
         delay_loop_start = datetime.datetime.now()
         elapsed_time = datetime.datetime.now() - delay_loop_start
         #Determines refresh interval, add 2 sec to value to get actual refresh interval (+/-)
@@ -347,7 +343,7 @@ try:
                 elif display == "off":
                     display = "on"
                     active = True
-                write_message(Ipm25_avg, Ipm25_live, confidence, conn_success, display, active)
+                write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_success, display, active)
             elif lcd.right_button:
                 if active == True:
                     active = False

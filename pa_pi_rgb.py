@@ -1,6 +1,6 @@
 # Gets PurpleAir readings from PurpleAir sensor on local LAN, converts to "AQI" and displays on
 # Raspberry PI with Adafruit RGB Positive LCD+Keypad Kit
-# James S. Lucas - 20230720
+# James S. Lucas - 20230722
 import json
 import requests
 from time import sleep
@@ -8,7 +8,6 @@ import datetime
 import sys
 import logging
 import itertools
- 
 import board
 import busio
 import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
@@ -71,8 +70,7 @@ def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
                     if attempts < max_attempts:
                         sleep(adjusted_delay)
             logger.exception(f'Error in {func.__name__}: max of {max_attempts} attempts reached')
-            print(f'Error in {func.__name__}(): max of {max_attempts} attempts reached')
-            sys.exit(1)
+            exit_handler()
         return wrapper
     return decorator
 
@@ -156,7 +154,6 @@ def write_spinner(conn_success, active):
     Returns:
     None: This function does not return anything. It updates the LCD display with a spinning slash or a connection error message.
     """
-    # Updates a spinning slash on the bottom right of the display.
     if conn_success:
         if active == True:
             message = next(spinner)
@@ -218,10 +215,10 @@ def confidence_check(sensor_response):
     else:
         pct_diff_ab = 0
     if diff_ab >= 5 or pct_diff_ab >= .7:
-        #This will be displayed as a "C" next to average reading instead of "A" meaning confidence issue
+        # This will be displayed as a "c" next to the average or live reading to flag low confidence.
         confidence = 'c'
     else:
-        #This will be displayed as a "A" next to average reading meaning average reading displayed (cofidence is good)
+        # Confidence is good
         confidence = ' '
     return confidence
 
@@ -238,7 +235,6 @@ def process_sensor_reading(connection_url):
     """
     avg_response = get_avg_reading(connection_url)
     live_response = get_live_reading(connection_url)
-    # Parse response for printing to console
     if (avg_response.ok and live_response.ok):
         conn_success = True
         #json_response = live_response.json()
@@ -251,8 +247,7 @@ def process_sensor_reading(connection_url):
         avg_confidence = confidence_check(avg_response)
         live_confidence = confidence_check(live_response)
     else:
-        print('Error status code not ok')
-        logger.error('Error status code not ok')
+        logger.error('Error: status code not ok')
         conn_success = False
         pm2_5_reading_avg, pm2_5_reading_live, avg_confidence, live_confidence = 0, 0, 0, 0
     return pm2_5_reading_avg, pm2_5_reading_live, avg_confidence, live_confidence, conn_success
@@ -298,9 +293,6 @@ def calc_aqi(PM2_5):
             aqi_cat = 'hazardous'
         elif (PM2_5 >= 500.5):
             aqi_cat = 'beyond_aqi'
-        else:
-            print(" ")
-            print("PM2_5: " + str(PM2_5))
         Ihigh = pm25_aqi.get(aqi_cat)[1]
         Ilow = pm25_aqi.get(aqi_cat)[0]
         Chigh = pm25_aqi.get(aqi_cat)[3]
@@ -311,7 +303,24 @@ def calc_aqi(PM2_5):
         return Ipm25
     except Exception as e:
         logger.exception('calc_aqi() exception')
-        print("error in calc_aqi() function: %s" % e)
+
+
+def exit_handler():
+    """
+    This function is used to handle the exit of the program.
+
+    Parameters:
+    None
+
+    Returns:
+    None
+    """
+    sleep(.4)
+    lcd.color = [0, 0, 0]
+    lcd.message = " "
+    lcd.clear()
+    sleep(.4)
+    sys.exit(0)
 
 
 try:
@@ -321,6 +330,7 @@ try:
     if conn_success:
         Ipm25_avg = calc_aqi(avg_reading)
     sleep(1)
+    # Loop forever
     while 1:
         if (5 < datetime.datetime.now().hour <= 22) and (active == True):
             avg_reading, live_reading, avg_confidence, live_confidence, conn_success = process_sensor_reading(connection_url)
@@ -353,8 +363,4 @@ try:
             sleep(.01)
 
 except KeyboardInterrupt:
-    sleep(.4)
-    lcd.color = [0, 0, 0]
-    lcd.message = " "
-    lcd.clear()
-    sleep(.4)
+    exit_handler()

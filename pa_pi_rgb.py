@@ -252,16 +252,16 @@ def calc_aqi(PM2_5):
     PM2_5 = max(int(float(PM2_5) * 10) / 10.0, 0)
     #AQI breakpoints (0,    1,     2,    3    )
     #                (Ilow, Ihigh, Clow, Chigh)
-    pm25_aqi = {
-        'good': [0, 50, 0, 12],
-        'moderate': [51, 100, 12.1, 35.4],
-        'sensitive': [101, 150, 35.5, 55.4],
-        'unhealthy': [151, 200, 55.5, 150.4],
-        'very': [201, 300, 150.5, 250.4],
-        'hazardous': [301, 500, 250.5, 500.4],
-        'beyond_aqi': [301, 500, 250.5, 500.4]
-    }
-    for aqi_cat, values in pm25_aqi.items():
+    pm25_aqi = (
+                [0, 50, 0, 12],
+                [51, 100, 12.1, 35.4],
+                [101, 150, 35.5, 55.4],
+                [151, 200, 55.5, 150.4],
+                [201, 300, 150.5, 250.4],
+                [301, 500, 250.5, 500.4],
+                [301, 500, 250.5, 500.4]
+    )
+    for values in pm25_aqi:
         Ilow, Ihigh, Clow, Chigh = values
         if Clow <= PM2_5 <= Chigh:
             Ipm25 = int(round(((Ihigh - Ilow) / (Chigh - Clow) * (PM2_5 - Clow) + Ilow)))

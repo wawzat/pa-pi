@@ -91,30 +91,25 @@ def write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_s
         None
     """
     if conn_success:
-        if Ipm25_avg <= 50:
-            health_cat = "Good"
-            color = [0, 100, 0]
-        elif 50 < Ipm25_avg <= 100:
-            health_cat = "Moderate"
-            color = [100, 100, 0]
-        elif 100< Ipm25_avg <= 150:
-            health_cat = "Sensitive"   
-            color = [100, 100, 100]
-        elif 150 < Ipm25_avg <= 200:
-            health_cat = "Unhealthy"
-            color = [100, 0, 0]
-        elif 200 < Ipm25_avg <= 300:
-            health_cat = "Very Unhealthy"
-            color = [100, 0, 100]
-        elif Ipm25_avg > 300:
-            health_cat = "Hazardous"
-            color = [0, 0, 100]
+        health_categories = (
+            (50, "Good", [0, 100, 0]),
+            (100, "Moderate", [100, 100, 0]),
+            (150, "Sensitive", [100, 100, 100]),
+            (200, "Unhealthy", [100, 0, 0]),
+            (300, "Very Unhealthy", [100, 0, 100]),
+            (float('inf'), "Hazardous", [0, 0, 100])
+        )
+        for limit, category, color_value in health_categories:
+            if Ipm25_avg <= limit:
+                health_cat = category
+                color = color_value
+                break
         if display == "on":
             lcd.color = color
         elif display == "off":
             lcd.clear()
             lcd.color = [0, 0, 0]
-        # Calculate the number of spaces to pad between current and previous AQI
+        # Calculate the number of spaces to pad between average and live AQI
         l1_pad_length = 16 - (len(str(Ipm25_avg)) + len(str(Ipm25_live)) + 9)
         if active == True:
             online_status = next(spinner)

@@ -250,6 +250,8 @@ def process_sensor_reading(connection_url):
 
 def calc_aqi(PM2_5):
     PM2_5 = max(int(float(PM2_5) * 10) / 10.0, 0)
+    #AQI breakpoints (0,    1,     2,    3    )
+    #                (Ilow, Ihigh, Clow, Chigh)
     pm25_aqi = {
         'good': [0, 50, 0, 12],
         'moderate': [51, 100, 12.1, 35.4],

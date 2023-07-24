@@ -77,7 +77,7 @@ def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
 
 def write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_success, display, active):
     """
-    This function is responsible for writing a message to the LCD display.
+    This function writes a message to the LCD display.
 
     Args:
         Ipm25_avg (float): The average PM2.5 value.
@@ -130,7 +130,7 @@ def write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_s
     else:
         lcd.clear()
         color = [100, 0, 0]
-        logger.error('Connection error')
+        logger.error('write_message() connection error')
         message = "Connection Error"
     if display == "on":
         lcd.message = message
@@ -140,7 +140,7 @@ def write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_s
 
 def write_spinner(conn_success, active):
     """
-    This function is used to update a spinning slash on the bottom right of the display.
+    This function updates a spinning slash on the bottom right of the display.
     
     Parameters:
     conn_success (bool): A boolean value indicating whether the connection was successful or not.
@@ -167,7 +167,7 @@ def write_spinner(conn_success, active):
 @retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
 def get_avg_reading(connection_url):
     """
-    This function is used to get the average sensor reading from a PurpleAir sensor.
+    This function gets the average sensor reading from a PurpleAir sensor.
 
     Parameters:
     connection_url (str): The URL of the PurpleAir sensor.
@@ -183,7 +183,7 @@ def get_avg_reading(connection_url):
 @retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
 def get_live_reading(connection_url):
     """
-    This function is used to get the live sensor reading from a PurpleAir sensor.
+    This function gets the live sensor reading from a PurpleAir sensor.
 
     Parameters:
     connection_url (str): The URL of the PurpleAir sensor.
@@ -197,7 +197,21 @@ def get_live_reading(connection_url):
     return live_response
 
 
+
 def confidence_check(sensor_response):
+    """
+    This function checks the confidence of the sensor readings from a PurpleAir sensor.
+    The confidence is determined based on the difference between the two sensor readings.
+    If the difference is greater than or equal to 5ug/m^3 or the percentage difference is greater than or equal to 0.7,
+    the confidence is flagged as low (represented by 'c'). Otherwise, the confidence is considered good (represented by ' ').
+
+    Parameters:
+    sensor_response (Response): The response object containing the sensor readings from the PurpleAir sensor.
+
+    Returns:
+    str: A string representing the confidence of the sensor readings.
+    The string is used on the display. 'c' is displayed for low confidence and blank ' ' for good confidence.
+    """
     sensor_reading = json.loads(sensor_response.text)
     # Confidence
     # Flag if difference >= 5ug/m^3 or difference >= .7
@@ -220,7 +234,7 @@ def confidence_check(sensor_response):
 
 def process_sensor_reading(connection_url):
     """
-    This function is used to process sensor readings from a PurpleAir sensor.
+    This function processes sensor readings from a PurpleAir sensor.
 
     Parameters:
     connection_url (str): The URL of the PurpleAir sensor.
@@ -249,6 +263,15 @@ def process_sensor_reading(connection_url):
 
 
 def calc_aqi(PM2_5):
+    """
+    This function calculates the Air Quality Index (AQI) based on PM2.5 concentration.
+
+    Parameters:
+    PM2_5 (float): The PM2.5 concentration in micrograms per cubic meter.
+
+    Returns:
+    int: The calculated AQI.
+    """
     PM2_5 = max(int(float(PM2_5) * 10) / 10.0, 0)
     #AQI breakpoints (0,    1,     2,    3    )
     #                (Ilow, Ihigh, Clow, Chigh)
@@ -270,7 +293,7 @@ def calc_aqi(PM2_5):
 
 def exit_handler():
     """
-    This function is used to handle the exit of the program.
+    This function blanks the display anbd exits the program.
 
     Parameters:
     None
@@ -310,18 +333,12 @@ try:
             elapsed_time = datetime.datetime.now() - delay_loop_start
             write_spinner(conn_success, active)
             if lcd.select_button:
-                if display == "on":
-                    display = "off"
-                    active = False
-                elif display == "off":
-                    display = "on"
-                    active = True
+                state_map = {"on": ("off", False), "off": ("on", True)}
+                display, active = state_map[display]
                 write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_success, display, active)
             elif lcd.right_button:
-                if active == True:
-                    active = False
-                elif active == False:
-                    active = True
+                state_map = {True: False, False: True}
+                active = state_map[active]
                 write_spinner(conn_success, active)
             sleep(.01)
 

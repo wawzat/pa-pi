@@ -41,7 +41,7 @@ file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
 
-def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
+def retry(max_attempts=15, delay=2, escalation=2, exception=(Exception,)):
     """
     A decorator function that retries a function call a specified number of times if it raises a specified exception.
 
@@ -164,7 +164,7 @@ def write_spinner(conn_success, active):
         sleep(2)
 
 
-@retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
+@retry(max_attempts=15, delay=2, escalation=2, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
 def get_avg_reading(connection_url):
     """
     This function gets the average sensor reading from a PurpleAir sensor.
@@ -180,7 +180,7 @@ def get_avg_reading(connection_url):
     return avg_response
 
 
-@retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
+@retry(max_attempts=15, delay=2, escalation=2, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
 def get_live_reading(connection_url):
     """
     This function gets the live sensor reading from a PurpleAir sensor.

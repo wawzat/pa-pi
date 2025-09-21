@@ -1,7 +1,8 @@
 # Gets PurpleAir readings from PurpleAir sensor on local LAN, converts to "AQI" and displays on
 # Raspberry PI with Adafruit RGB Positive LCD+Keypad Kit
-# James S. Lucas - 20230722
+# James S. Lucas - 20250921
 import json
+import threading
 import requests
 from time import sleep
 import datetime
@@ -19,6 +20,29 @@ lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
 lcd.clear()
 lcd.color = [0, 150, 0]
 lcd.message = "Ready"
+sensor_data = {
+    "avg_reading": 0,
+    "live_reading": 0,
+    "avg_confidence": ' ',
+    "live_confidence": ' ',
+    "conn_success": False,
+    "Ipm25_avg": 0,
+    "Ipm25_live": 0
+}
+sensor_lock = threading.Lock()
+
+def sensor_polling_thread():
+    while True:
+        avg_reading, live_reading, avg_confidence, live_confidence, conn_success = process_sensor_reading(connection_url)
+        with sensor_lock:
+            sensor_data["avg_reading"] = avg_reading
+            sensor_data["live_reading"] = live_reading
+            sensor_data["avg_confidence"] = avg_confidence
+            sensor_data["live_confidence"] = live_confidence
+            sensor_data["conn_success"] = conn_success
+            sensor_data["Ipm25_avg"] = calc_aqi(avg_reading) if conn_success else 0
+            sensor_data["Ipm25_live"] = calc_aqi(live_reading) if conn_success else 0
+        sleep(3)
 
 # Create custom backslash character
 backslash = bytes([0x0,0x10,0x8,0x4,0x2,0x1,0x0,0x0])
@@ -310,37 +334,38 @@ def exit_handler():
 
 
 try:
-    display = "on"
-    active = True
-    avg_reading, live_reading, avg_confidence, live_confidence, conn_success = process_sensor_reading(connection_url)
-    if conn_success:
-        Ipm25_avg = calc_aqi(avg_reading)
-    sleep(1)
-    # Loop forever
-    while 1:
-        if (5 < datetime.datetime.now().hour <= 22) and (active == True):
-            avg_reading, live_reading, avg_confidence, live_confidence, conn_success = process_sensor_reading(connection_url)
-            if conn_success:
-                Ipm25_avg = calc_aqi(avg_reading)
-                Ipm25_live = calc_aqi(live_reading)
-        elif 22 < datetime.datetime.now().hour < 5:
-            active = False
-        write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_success,  display, active)
-        delay_loop_start = datetime.datetime.now()
-        elapsed_time = datetime.datetime.now() - delay_loop_start
-        #Determines refresh interval, add 2 sec to value to get actual refresh interval (+/-)
-        while elapsed_time.seconds <= 3:
+        display = "on"
+        active = True
+
+        # Start sensor polling in a background thread
+        polling_thread = threading.Thread(target=sensor_polling_thread, daemon=True)
+        polling_thread.start()
+
+        while True:
+            with sensor_lock:
+                Ipm25_avg = sensor_data["Ipm25_avg"]
+                Ipm25_live = sensor_data["Ipm25_live"]
+                avg_confidence = sensor_data["avg_confidence"]
+                live_confidence = sensor_data["live_confidence"]
+                conn_success = sensor_data["conn_success"]
+
+            write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_success, display, active)
+            delay_loop_start = datetime.datetime.now()
             elapsed_time = datetime.datetime.now() - delay_loop_start
-            write_spinner(conn_success, active)
-            if lcd.select_button:
-                state_map = {"on": ("off", False), "off": ("on", True)}
-                display, active = state_map[display]
-                write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_success, display, active)
-            elif lcd.right_button:
-                state_map = {True: False, False: True}
-                active = state_map[active]
+
+            # Spinner and button check loop
+            while elapsed_time.seconds <= 3:
+                elapsed_time = datetime.datetime.now() - delay_loop_start
                 write_spinner(conn_success, active)
-            sleep(.01)
+                if lcd.select_button:
+                    state_map = {"on": ("off", False), "off": ("on", True)}
+                    display, active = state_map[display]
+                    write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_success, display, active)
+                elif lcd.right_button:
+                    state_map = {True: False, False: True}
+                    active = state_map[active]
+                    write_spinner(conn_success, active)
+                sleep(.01)
 
 except KeyboardInterrupt:
     exit_handler()

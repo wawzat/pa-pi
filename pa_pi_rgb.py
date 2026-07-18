@@ -115,6 +115,10 @@ def write_message(Ipm25_avg, Ipm25_live, avg_confidence, live_confidence, conn_s
         None
     """
     if conn_success:
+        if Ipm25_avg is None:
+            Ipm25_avg = 0
+        if Ipm25_live is None:
+            Ipm25_live = 0
         aqi_categories = (
             (50, "Good", [0, 100, 0]),
             (100, "Moderate", [100, 100, 0]),
@@ -314,6 +318,8 @@ def calc_aqi(PM2_5):
             Ipm25 = int(round(((Ihigh - Ilow) / (Chigh - Clow) * (PM2_5 - Clow) + Ilow)))
             return Ipm25
 
+    # Fallback for values above 500.4
+    return 500
 
 def exit_handler():
     """

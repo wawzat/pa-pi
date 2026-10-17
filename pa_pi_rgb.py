@@ -243,12 +243,11 @@ def confidence_check(sensor_response):
     sensor_reading = json.loads(sensor_response.text)
     # Confidence
     # Flag if difference >= 5ug/m^3 or difference >= .7
-    diff_ab = abs(sensor_reading['pm2_5_atm'] - sensor_reading['pm2_5_atm_b'])
-    if sensor_reading['pm2_5_atm'] + sensor_reading['pm2_5_atm_b'] != 0:
-        pct_diff_ab = (
-            abs(sensor_reading['pm2_5_atm'] - sensor_reading['pm2_5_atm_b'])
-            / (sensor_reading['pm2_5_atm'] + sensor_reading['pm2_5_atm_b']/2)
-        )
+    pm_a = float(sensor_reading['pm2_5_atm'])
+    pm_b = float(sensor_reading['pm2_5_atm_b'])
+    diff_ab = abs(pm_a - pm_b)
+    if pm_a + pm_b != 0:
+        pct_diff_ab = diff_ab / (pm_a + pm_b / 2)
     else:
         pct_diff_ab = 0
     if diff_ab >= 5 or pct_diff_ab >= .7:
@@ -278,8 +277,9 @@ def process_sensor_reading(connection_url):
         #print(json.dumps(json_response, indent=4, sort_keys=True))
         avg_sensor_reading = json.loads(avg_response.text)
         live_sensor_reading = json.loads(live_response.text)
-        pm2_5_reading_avg = (avg_sensor_reading['pm2_5_atm'] + avg_sensor_reading['pm2_5_atm_b']) / 2
-        pm2_5_reading_live = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
+        # Sensor may return values as strings
+        pm2_5_reading_avg = (float(avg_sensor_reading['pm2_5_atm']) + float(avg_sensor_reading['pm2_5_atm_b'])) / 2
+        pm2_5_reading_live = (float(live_sensor_reading['pm2_5_atm']) + float(live_sensor_reading['pm2_5_atm_b'])) / 2
         # Confidence
         avg_confidence = confidence_check(avg_response)
         live_confidence = confidence_check(live_response)
